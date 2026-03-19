@@ -6,3 +6,4 @@ storage/
 *.apkg
 .DS_Store
 venv/
+test-documents/
