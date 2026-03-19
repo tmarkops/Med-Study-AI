@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 storage/
+app/indexes/
 *.pdf
 *.apkg
 .DS_Store
