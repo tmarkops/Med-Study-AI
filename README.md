@@ -38,6 +38,7 @@ prompts/
 
 - [ ] Add per-file delete to `ingest.py` (remove chunks by `file_hash` without resetting the whole index)
 - [ ] Fix retrieval noise and coverage: tested on objective *"Schématiser l'absorption de la vitamine B12 et de l'acide folique"* (top_k=10) — 4/10 retrieved chunks were irrelevant (fasting metabolism, obesity, realimentation, scored ~0.39–0.40) while relevant pages on pancreatic insufficiency → ↓ trypsin → B12 malabsorption, PPIs → ↓ HCl → ↓ B12 release, and intracellular folate → THF conversion were never retrieved. Root cause: embedding space doesn't cleanly separate "vitamin absorption" from "general nutrition." Increasing top_k papers over the problem but worsens noise. Long-term fix is likely a **reranker** (second-pass relevance scoring after retrieval) rather than a higher k.
+- [ ] Fix concise prompt output length: `--style concise` currently produces notes roughly the same length as `--style detailed`. The prompt says "be concise" but gives no hard constraint, so the model treats it as a style preference rather than a length target. Fix: add an explicit length heuristic (e.g. ~half the length of detailed, max 2 clinical pearls, no redundant summary sections after a pathway is already listed step-by-step).
 
 ## Usage
 

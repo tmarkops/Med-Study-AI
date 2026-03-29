@@ -45,6 +45,7 @@ Directly answer the objective using only what the source material covers.
 - Use `→` for cause-effect chains: `H. pylori → ↑ gastrin → ↑ HCl → *ulcère*`
 - Use `↑`/`↓` for increases/decreases
 - Abbreviations: define on first use, then use consistently
+- Do not conflate similar proteins or molecules — keep distinct molecules (e.g., haptocorrin vs transcobalamin) clearly separate. Do not speculate beyond the source material.
 - No tables
 
 ---

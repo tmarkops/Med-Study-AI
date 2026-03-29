@@ -48,6 +48,7 @@ Go through the objective systematically. Pull all relevant content from the sour
 - If a concept is complex, open with a short introductory sentence before the bullets — this helps orient the reader
 - Numbers, thresholds, and classifications matter — include them when present in the source
 - Add clinical pearls where the source material supports them
+- Do not conflate similar proteins or molecules — if two named molecules have distinct roles (e.g., haptocorrin vs transcobalamin), keep them clearly separate. Do not speculate beyond what the source material explicitly states.
 
 **Structure:**
 - Use bullet points for most content

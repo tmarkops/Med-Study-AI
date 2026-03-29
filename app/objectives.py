@@ -1,48 +1,53 @@
 """
 Parse a list of learning objectives from a .txt, .pdf, or .docx file.
 
-Each non-empty line (after stripping) is treated as one objective.
-Lines that are clearly just whitespace or page artifacts (single characters,
-pure numbers) are skipped.
+Uses Claude to intelligently extract only the numbered learning objectives,
+merging sub-items (a/b/c) into their parent objective. This handles messy
+PDF layouts, section headers, resource lists, and other non-objective content.
 """
 
-import re
+import json
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def parse_objectives(path: str | Path) -> list[str]:
     """
     Read objectives from a file and return them as a list of strings.
 
-    Supports .txt, .pdf, and .docx files.
-    Each non-trivial line is one objective; preserves original text verbatim.
+    Supports .txt, .pdf, and .docx files. Uses Claude to extract only the
+    actual learning objectives, ignoring headers, resource lists, and other noise.
     """
     path = Path(path)
     suffix = path.suffix.lower()
 
     if suffix == ".txt":
-        raw_lines = path.read_text(encoding="utf-8").splitlines()
+        raw_text = path.read_text(encoding="utf-8")
     elif suffix == ".pdf":
-        raw_lines = _lines_from_pdf(path)
+        raw_text = _text_from_pdf(path)
     elif suffix in (".docx", ".doc"):
-        raw_lines = _lines_from_docx(path)
+        raw_text = _text_from_docx(path)
     else:
         raise ValueError(f"Unsupported file type: {suffix}. Use .txt, .pdf, or .docx.")
 
-    return _clean(raw_lines)
+    return _extract_with_claude(raw_text)
 
 
-def _lines_from_pdf(path: Path) -> list[str]:
+def _text_from_pdf(path: Path) -> str:
     import pdfplumber
-    lines = []
+    pages = []
     with pdfplumber.open(str(path)) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
-            lines.extend(text.splitlines())
-    return lines
+            pages.append(text)
+    return "\n".join(pages)
 
 
-def _lines_from_docx(path: Path) -> list[str]:
+def _text_from_docx(path: Path) -> str:
     try:
         from docx import Document
     except ImportError:
@@ -51,18 +56,44 @@ def _lines_from_docx(path: Path) -> list[str]:
             "Install it with: pip install python-docx"
         )
     doc = Document(str(path))
-    return [para.text for para in doc.paragraphs]
+    return "\n".join(para.text for para in doc.paragraphs)
 
 
-def _clean(lines: list[str]) -> list[str]:
-    """Strip whitespace, drop blank lines and single-character/number-only artifacts."""
-    objectives = []
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        # Skip lines that are just a number or a single character (page numbers, etc.)
-        if re.fullmatch(r"[\d\W]", line):
-            continue
-        objectives.append(line)
-    return objectives
+def _extract_with_claude(raw_text: str) -> list[str]:
+    """Use Claude to extract learning objectives from raw document text."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    prompt = f"""You are given the raw text of a medical school objectives document.
+Extract ONLY the numbered learning objectives. Return them as a JSON array of strings.
+
+Rules:
+- Include only actual learning objectives (numbered items students must achieve)
+- Skip section headers (e.g. "Principes de nutrition", "Hématologie :")
+- Skip resource lists, textbook references, video links, and any preparatory material sections
+- If an objective has sub-items (a, b, c...), merge them into the parent objective as a single string
+- Preserve the original wording of each objective verbatim
+- Do not add numbering — include it only if it was in the original text
+
+Return ONLY a valid JSON array, no explanation. Example:
+["Objective one text", "Objective two text with sub-items merged in"]
+
+Document text:
+{raw_text}"""
+
+    message = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=2048,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    response = message.content[0].text.strip()
+    # Strip markdown code fences if present
+    if response.startswith("```"):
+        response = response.split("```")[1]
+        if response.startswith("json"):
+            response = response[4:]
+        response = response.strip()
+
+    return json.loads(response)

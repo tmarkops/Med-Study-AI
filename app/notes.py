@@ -4,11 +4,11 @@ import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 import anthropic
-from docx import Document
-from docx.shared import Pt
 
 from query import retrieve
 from objectives import parse_objectives
+from adaptive_top_k import adaptive_top_k
+from export import save_as_docx
 
 load_dotenv()
 
@@ -29,81 +29,6 @@ PROMPT_FILES = {
 def _retrieval_query(objective: str) -> str:
     """Strip leading numbering (e.g. '3.', '1)') from an objective before using it as a retrieval query."""
     return re.sub(r"^\s*\d+[\.\)]\s*", "", objective).strip()
-
-
-# Verbs that push score toward narrow
-_NARROW_VERBS = {
-    "define", "définir", "list", "lister", "énumérer", "enumerate",
-    "name", "nommer", "identify", "identifier", "state", "énoncer",
-}
-
-# Verbs that push score toward broad
-_BROAD_VERBS = {
-    "explain", "expliquer", "describe", "décrire", "discuss", "discuter",
-    "compare", "comparer", "contrast", "distinguish", "distinguer",
-    "analyze", "analyser", "outline", "présenter", "summarize", "résumer",
-    "evaluate", "évaluer", "elaborate", "développer",
-}
-
-# Words that signal multiple sub-topics within one objective
-_BREADTH_KEYWORDS = {
-    "mechanisms", "mécanismes", "types", "stages", "stades", "steps", "étapes",
-    "complications", "causes", "factors", "facteurs", "features", "manifestations",
-    "classification", "classes", "categories", "catégories", "roles", "rôles",
-    "indications", "contraindications", "contre-indications", "effects", "effets",
-    "management", "prise en charge", "treatment", "traitement", "diagnosis", "diagnostic",
-}
-
-_TOP_K_NARROW  = 4
-_TOP_K_DEFAULT = 10
-_TOP_K_BROAD   = 16
-
-
-def _adaptive_top_k(objective: str) -> int:
-    """
-    Score the objective's breadth using four signals and map to top_k:
-      - Leading verb (narrow / broad)
-      - Presence of breadth keywords (mechanisms, types, complications, …)
-      - Conjunctions implying multiple sub-topics (and/et/or/ou)
-      - Objective length (word count)
-
-    Score >= 2  → broad  (top_k=16)
-    Score <= -2 → narrow (top_k=4)
-    Otherwise   → default (top_k=10)
-    """
-    text = re.sub(r"^\s*\d+[\.\)]\s*", "", objective).strip()
-    lower = text.lower()
-    words = re.split(r"[\s,;:]+", lower)
-    score = 0
-
-    # Signal 1: leading verb
-    first_word = words[0] if words else ""
-    if first_word in _NARROW_VERBS:
-        score -= 2
-    elif first_word in _BROAD_VERBS:
-        score += 1
-
-    # Signal 2: breadth keywords anywhere in the objective
-    keyword_hits = sum(1 for kw in _BREADTH_KEYWORDS if kw in lower)
-    score += min(keyword_hits, 2)  # cap at +2 to avoid runaway scores
-
-    # Signal 3: conjunctions suggesting multiple sub-topics
-    conjunctions = {"and", "et", "or", "ou"}
-    if any(w in conjunctions for w in words):
-        score += 1
-
-    # Signal 4: word count (short = specific, long = multi-part)
-    word_count = len(words)
-    if word_count <= 6:
-        score -= 1
-    elif word_count >= 12:
-        score += 1
-
-    if score >= 2:
-        return _TOP_K_BROAD
-    if score <= -2:
-        return _TOP_K_NARROW
-    return _TOP_K_DEFAULT
 
 
 def _load_prompt(language: str, style: str) -> str:
@@ -141,7 +66,7 @@ def generate_notes(
     Returns:
         Generated notes as a string.
     """
-    resolved_top_k = top_k if top_k > 0 else _adaptive_top_k(objective)
+    resolved_top_k = top_k if top_k > 0 else adaptive_top_k(objective)
     rerank_label = " + rerank" if rerank else ""
     print(f"  Retrieving source material (top_k={resolved_top_k}{rerank_label})...")
     lang_filter = language if language in ("EN", "FR") else None
@@ -149,6 +74,11 @@ def generate_notes(
 
     if not results:
         return f"## {objective}\n\n> No relevant source material found for this objective.\n"
+
+    print("\n--- RETRIEVED CHUNKS ---")
+    for i, node in enumerate(results, 1):
+        print(f"\n[Chunk {i}]\n{node.node.text.strip()}\n")
+    print("--- END CHUNKS ---\n")
 
     context_parts = []
     for i, node in enumerate(results, 1):
@@ -202,43 +132,6 @@ def generate_notes_from_objectives(
     return "\n\n---\n\n".join(sections)
 
 
-def _save_as_docx(markdown_text: str, output_path: Path):
-    """Convert markdown notes to a formatted .docx file."""
-    doc = Document()
-
-    for line in markdown_text.splitlines():
-        if line.startswith("### "):
-            doc.add_heading(line[4:].strip(), level=3)
-        elif line.startswith("## "):
-            doc.add_heading(line[3:].strip(), level=2)
-        elif line.startswith("# "):
-            doc.add_heading(line[2:].strip(), level=1)
-        elif line.startswith("- ") or line.startswith("* "):
-            p = doc.add_paragraph(style="List Bullet")
-            _add_inline_formatting(p, line[2:].strip())
-        elif line.startswith("> "):
-            p = doc.add_paragraph(style="Quote")
-            _add_inline_formatting(p, line[2:].strip())
-        elif line.strip() == "" or line.strip() == "---":
-            doc.add_paragraph()
-        else:
-            p = doc.add_paragraph()
-            _add_inline_formatting(p, line.strip())
-
-    doc.save(str(output_path))
-
-
-def _add_inline_formatting(paragraph, text: str):
-    """Parse **bold** and render it in a paragraph run."""
-    parts = re.split(r"(\*\*[^*]+\*\*)", text)
-    for part in parts:
-        if part.startswith("**") and part.endswith("**"):
-            run = paragraph.add_run(part[2:-2])
-            run.bold = True
-        else:
-            paragraph.add_run(part)
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate study notes from learning objectives using ingested PDFs."
@@ -286,7 +179,7 @@ if __name__ == "__main__":
     if args.output:
         output_path = Path(args.output)
         if output_path.suffix.lower() == ".docx":
-            _save_as_docx(notes, output_path)
+            save_as_docx(notes, output_path)
         else:
             output_path.write_text(notes, encoding="utf-8")
         print(f"\nNotes saved to {args.output}")

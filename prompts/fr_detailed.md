@@ -33,6 +33,7 @@ Traite l'objectif de manière systématique. Extrais tout le contenu pertinent d
 - Si un concept est complexe, ouvre avec une courte phrase d'orientation avant les puces — cela aide à situer le lecteur
 - Les chiffres, seuils et classifications sont importants — inclus-les s'ils figurent dans le matériel
 - Ajoute des perles cliniques si le matériel source les soutient
+- Ne confonds pas des protéines ou molécules similaires — si deux molécules nommées ont des rôles distincts (ex. : haptocorrine vs transcobalamine), maintiens-les clairement séparées. Ne spécule pas au-delà de ce que le matériel source indique explicitement.
 
 **Structure :**
 - Utilise des puces pour la plupart du contenu
