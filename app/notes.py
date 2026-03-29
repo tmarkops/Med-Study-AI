@@ -123,6 +123,7 @@ def generate_notes(
     language: str = "EN",
     style: str = "detailed",
     top_k: int = 0,
+    rerank: bool = True,
 ) -> str:
     """
     Retrieve relevant chunks and generate study notes for a single learning objective.
@@ -135,14 +136,16 @@ def generate_notes(
         style: Prompt style — "detailed" or "concise".
         top_k: Number of source chunks to retrieve. Pass 0 (default) to infer
                automatically from the objective's complexity.
+        rerank: If True (default), oversample and rerank with a cross-encoder.
 
     Returns:
         Generated notes as a string.
     """
     resolved_top_k = top_k if top_k > 0 else _adaptive_top_k(objective)
-    print(f"  Retrieving source material (top_k={resolved_top_k})...")
+    rerank_label = " + rerank" if rerank else ""
+    print(f"  Retrieving source material (top_k={resolved_top_k}{rerank_label})...")
     lang_filter = language if language in ("EN", "FR") else None
-    results = retrieve(_retrieval_query(objective), top_k=resolved_top_k, block=block, source_type=source_type, language=lang_filter)
+    results = retrieve(_retrieval_query(objective), top_k=resolved_top_k, block=block, source_type=source_type, language=lang_filter, rerank=rerank)
 
     if not results:
         return f"## {objective}\n\n> No relevant source material found for this objective.\n"
@@ -176,6 +179,7 @@ def generate_notes_from_objectives(
     language: str = "EN",
     style: str = "detailed",
     top_k: int = 0,
+    rerank: bool = True,
 ) -> str:
     """
     Generate notes for a list of objectives and return them as a single combined string.
@@ -191,6 +195,7 @@ def generate_notes_from_objectives(
             language=language,
             style=style,
             top_k=top_k,
+            rerank=rerank,
         )
         sections.append(notes)
 
@@ -256,6 +261,8 @@ if __name__ == "__main__":
     parser.add_argument("--style", default="detailed", choices=["detailed", "concise"], help="Prompt style")
     parser.add_argument("--top-k", type=int, default=0,
                         help="Number of source chunks to retrieve (0 = infer from objective complexity)")
+    parser.add_argument("--no-rerank", action="store_true",
+                        help="Disable cross-encoder reranking (faster but lower retrieval quality)")
     parser.add_argument("--output", default=None, help="Optional path to save the notes (e.g. notes.md)")
     args = parser.parse_args()
 
@@ -273,6 +280,7 @@ if __name__ == "__main__":
         language=args.language,
         style=args.style,
         top_k=args.top_k,
+        rerank=not args.no_rerank,
     )
 
     if args.output:
