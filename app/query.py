@@ -25,6 +25,7 @@ def retrieve(query: str, top_k: int = 8, block: str = None, source_type: str = N
         similarity_top_k=top_k,
         filters=filters,
     )
+
     return retriever.retrieve(query)
 
 
