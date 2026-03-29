@@ -26,11 +26,20 @@ def _load_embed_model():
 
 
 def load_index() -> VectorStoreIndex:
-    """Load the shared index from disk."""
+    """Load the shared index fresh from disk each time."""
     _load_embed_model()
     if not SHARED_INDEX_DIR.exists():
         raise FileNotFoundError("No shared index found. Run ingest.py on at least one PDF first.")
-    storage_context = StorageContext.from_defaults(persist_dir=str(SHARED_INDEX_DIR))
+    # Import fresh store classes each call so LlamaIndex never returns a
+    # stale singleton — critical when ingest and query run in the same process.
+    from llama_index.core.storage.docstore import SimpleDocumentStore
+    from llama_index.core.storage.index_store import SimpleIndexStore
+    from llama_index.core.vector_stores import SimpleVectorStore
+    storage_context = StorageContext.from_defaults(
+        docstore=SimpleDocumentStore.from_persist_dir(str(SHARED_INDEX_DIR)),
+        index_store=SimpleIndexStore.from_persist_dir(str(SHARED_INDEX_DIR)),
+        vector_store=SimpleVectorStore.from_persist_dir(str(SHARED_INDEX_DIR)),
+    )
     return load_index_from_storage(storage_context)
 
 

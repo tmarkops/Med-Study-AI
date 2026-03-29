@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — MedNotes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f8fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e8eaf0;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #f76b4f; }
+
+    .header-links { display: flex; gap: 1rem; }
+    .header-links a { font-size: 0.85rem; color: #4f6ef7; text-decoration: none; }
+    .header-links a:hover { text-decoration: underline; }
+
+    main {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1.5px solid #e8eaf0;
+      border-radius: 16px;
+      padding: 1.75rem;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      color: #1a1a2e;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #aaa;
+      margin: 1.25rem 0 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #e0e2ea;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus { border-color: #4f6ef7; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 1rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1.4rem;
+      border: none;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary { background: #4f6ef7; color: #fff; }
+    .btn-primary:hover { background: #3a58e0; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status-box {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .status-box.info    { background: #eef0fd; color: #3a58e0; display: block; }
+    .status-box.success { background: #f0fdf4; color: #16a34a; display: block; }
+    .status-box.error   { background: #fff5f5; color: #e53e3e; display: block; }
+    .status-box.running { background: #fffbeb; color: #b45309; display: block; }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .file-label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px dashed #e0e2ea;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: #555;
+      transition: border-color 0.15s;
+      background: #fafafa;
+    }
+
+    .file-label:hover { border-color: #4f6ef7; color: #4f6ef7; }
+    .file-label input { display: none; }
+    .file-label .chosen { color: #1a1a2e; font-weight: 500; }
+
+    @media (max-width: 560px) {
+      .row, .row-3 { grid-template-columns: 1fr; }
+    }
+
+    /* Login overlay */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(247, 248, 250, 0.97);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #loginOverlay.hidden { display: none; }
+
+    .login-card {
+      background: #fff;
+      border: 1.5px solid #e8eaf0;
+      border-radius: 18px;
+      padding: 2.25rem 2rem;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .login-card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-card input {
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #e0e2ea;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    .login-card input:focus { border-color: #4f6ef7; }
+
+    .login-error {
+      font-size: 0.82rem;
+      color: #e53e3e;
+      display: none;
+    }
+
+    .login-error.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>Admin login</h2>
+    <input type="text" id="loginUser" placeholder="Username" autocomplete="username" />
+    <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" />
+    <div class="login-error" id="loginError">Invalid username or password.</div>
+    <button class="btn btn-primary" onclick="submitLogin()">Sign in</button>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    MedNotes Admin
+  </div>
+  <div class="header-links">
+    <a href="/">← Student view</a>
+  </div>
+</header>
+
+<main>
+  <h1>Admin Panel</h1>
+
+  <!-- Ingest PDF -->
+  <div class="card">
+    <h2>📚 Ingest a PDF</h2>
+    <form id="ingestForm">
+      <div class="form-group">
+        <label>PDF file</label>
+        <label class="file-label" id="ingestFileLabel">
+          <span>Choose PDF...</span>
+          <input type="file" id="ingestFile" accept=".pdf" onchange="updateFileLabel('ingestFile','ingestFileLabel')" />
+        </label>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Block</label>
+          <select id="ingestBlock">
+            <option value="general">general</option>
+            <option value="GI">GI</option>
+            <option value="cardio">cardio</option>
+            <option value="respiratory">respiratory</option>
+            <option value="neuro">neuro</option>
+            <option value="renal">renal</option>
+            <option value="hematology">hematology</option>
+            <option value="pharmacology">pharmacology</option>
+            <option value="anatomy">anatomy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Source type</label>
+          <select id="ingestSourceType">
+            <option value="textbook">textbook</option>
+            <option value="lecture">lecture</option>
+            <option value="notes">notes</option>
+            <option value="objectives">objectives</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Language</label>
+          <select id="ingestLanguage">
+            <option value="FR">FR</option>
+            <option value="EN">EN</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Title (optional)</label>
+          <input type="text" id="ingestTitle" placeholder="Defaults to filename" />
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" id="ingestBtn">Upload &amp; Ingest</button>
+      <div class="status-box" id="ingestStatus"></div>
+    </form>
+  </div>
+
+  <!-- Generate Notes -->
+  <div class="card">
+    <h2>✨ Generate Notes</h2>
+    <form id="generateForm">
+
+      <div class="section-label">Location</div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Semester</label>
+          <input type="text" id="genSemester" placeholder="e.g. S1" />
+        </div>
+        <div class="form-group">
+          <label>Block</label>
+          <select id="genBlock">
+            <option value="GI">GI</option>
+            <option value="cardio">cardio</option>
+            <option value="respiratory">respiratory</option>
+            <option value="neuro">neuro</option>
+            <option value="renal">renal</option>
+            <option value="hematology">hematology</option>
+            <option value="pharmacology">pharmacology</option>
+            <option value="anatomy">anatomy</option>
+            <option value="general">general</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row-3">
+        <div class="form-group">
+          <label>APE #</label>
+          <input type="number" id="genApeNumber" min="1" placeholder="1" />
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label>APE name</label>
+          <input type="text" id="genApeName" placeholder="e.g. Digestion et absorption" />
+        </div>
+      </div>
+
+      <div class="section-label">Notes</div>
+
+      <div class="form-group">
+        <label>Objectives file (.pdf, .docx, or .txt)</label>
+        <label class="file-label" id="generateFileLabel">
+          <span>Choose objectives file...</span>
+          <input type="file" id="generateFile" accept=".pdf,.docx,.txt" onchange="updateFileLabel('generateFile','generateFileLabel')" />
+        </label>
+      </div>
+
+      <div class="form-group">
+        <label>Output filename</label>
+        <input type="text" id="outputName" placeholder="e.g. Notes_APE1" />
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Language</label>
+          <select id="generateLanguage">
+            <option value="FR">FR</option>
+            <option value="EN">EN</option>
+            <option value="MIXED">MIXED</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Style</label>
+          <select id="generateStyle">
+            <option value="detailed">detailed</option>
+            <option value="concise">concise</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Source type filter (optional)</label>
+        <select id="generateSourceType">
+          <option value="">— none —</option>
+          <option value="textbook">textbook</option>
+          <option value="lecture">lecture</option>
+          <option value="notes">notes</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="generateBtn">Generate Notes</button>
+      <div class="status-box" id="generateStatus"></div>
+    </form>
+  </div>
+</main>
+
+<script>
+  // --- Auth ---
+  let authHeader = null;
+
+  async function submitLogin() {
+    const user = document.getElementById("loginUser").value;
+    const pass = document.getElementById("loginPass").value;
+    const header = "Basic " + btoa(user + ":" + pass);
+
+    // Verify credentials before hiding overlay
+    try {
+      const res = await fetch("/api/ingest", {
+        method: "POST",
+        headers: { Authorization: header },
+        body: new FormData(), // empty — will fail validation but auth runs first
+      });
+      if (res.status === 401) {
+        document.getElementById("loginError").classList.add("visible");
+        return;
+      }
+    } catch (_) {}
+
+    authHeader = header;
+    document.getElementById("loginOverlay").classList.add("hidden");
+    document.getElementById("loginError").classList.remove("visible");
+  }
+
+  // Allow Enter key on login form
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !document.getElementById("loginOverlay").classList.contains("hidden")) {
+      submitLogin();
+    }
+  });
+
+  function authedFetch(url, options = {}) {
+    return fetch(url, {
+      ...options,
+      headers: { ...(options.headers || {}), Authorization: authHeader },
+    });
+  }
+
+  function updateFileLabel(inputId, labelId) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    const name = input.files[0]?.name;
+    label.querySelector("span").textContent = name || "Choose file...";
+    if (name) label.querySelector("span").classList.add("chosen");
+  }
+
+  function setStatus(id, type, html) {
+    const el = document.getElementById(id);
+    el.className = "status-box " + type;
+    el.innerHTML = html;
+  }
+
+  // --- Ingest form ---
+  document.getElementById("ingestForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = document.getElementById("ingestFile").files[0];
+    if (!file) return setStatus("ingestStatus", "error", "Please choose a PDF file.");
+
+    const btn = document.getElementById("ingestBtn");
+    btn.disabled = true;
+    setStatus("ingestStatus", "info", '<span class="spinner"></span> Uploading and ingesting...');
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("block", document.getElementById("ingestBlock").value);
+    fd.append("source_type", document.getElementById("ingestSourceType").value);
+    fd.append("language", document.getElementById("ingestLanguage").value);
+    fd.append("title", document.getElementById("ingestTitle").value);
+
+    try {
+      const res = await authedFetch("/api/ingest", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("ingestStatus", "success", "✓ " + data.message);
+        document.getElementById("ingestForm").reset();
+        document.getElementById("ingestFileLabel").querySelector("span").textContent = "Choose PDF...";
+      } else {
+        setStatus("ingestStatus", "error", "Error: " + (data.detail || "Unknown error"));
+      }
+    } catch (err) {
+      setStatus("ingestStatus", "error", "Network error: " + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // --- Generate form ---
+  let pollInterval = null;
+
+  document.getElementById("generateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = document.getElementById("generateFile").files[0];
+    const semester = document.getElementById("genSemester").value.trim();
+    const apeNumber = document.getElementById("genApeNumber").value.trim();
+    const apeName = document.getElementById("genApeName").value.trim();
+    const outputName = document.getElementById("outputName").value.trim();
+
+    if (!semester)   return setStatus("generateStatus", "error", "Please enter a semester.");
+    if (!apeNumber)  return setStatus("generateStatus", "error", "Please enter an APE number.");
+    if (!apeName)    return setStatus("generateStatus", "error", "Please enter an APE name.");
+    if (!file)       return setStatus("generateStatus", "error", "Please choose an objectives file.");
+    if (!outputName) return setStatus("generateStatus", "error", "Please enter an output filename.");
+
+    const btn = document.getElementById("generateBtn");
+    btn.disabled = true;
+    setStatus("generateStatus", "info", '<span class="spinner"></span> Uploading objectives...');
+
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("output_name", outputName);
+    fd.append("semester", semester);
+    fd.append("block", document.getElementById("genBlock").value);
+    fd.append("ape_number", apeNumber);
+    fd.append("ape_name", apeName);
+    fd.append("source_type", document.getElementById("generateSourceType").value);
+    fd.append("language", document.getElementById("generateLanguage").value);
+    fd.append("style", document.getElementById("generateStyle").value);
+
+    try {
+      const res = await authedFetch("/api/generate", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus("generateStatus", "error", "Error: " + (data.detail || "Unknown error"));
+        btn.disabled = false;
+        return;
+      }
+      pollJob(data.job_id, btn);
+    } catch (err) {
+      setStatus("generateStatus", "error", "Network error: " + err.message);
+      btn.disabled = false;
+    }
+  });
+
+  function pollJob(jobId, btn) {
+    setStatus("generateStatus", "running", '<span class="spinner"></span> Generating notes — this may take a few minutes...');
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/jobs/" + jobId);
+        const job = await res.json();
+        if (job.status === "done") {
+          clearInterval(pollInterval);
+          btn.disabled = false;
+          setStatus("generateStatus", "success",
+            `✓ Notes generated! <a href="/download/${encodeURIComponent(job.path)}" style="color:#16a34a;font-weight:600;">Download ${job.filename}</a>`
+          );
+          document.getElementById("generateForm").reset();
+          document.getElementById("generateFileLabel").querySelector("span").textContent = "Choose objectives file...";
+        } else if (job.status === "error") {
+          clearInterval(pollInterval);
+          btn.disabled = false;
+          setStatus("generateStatus", "error", "Generation failed: " + job.error);
+        }
+      } catch (_) {}
+    }, 4000);
+  }
+</script>
+
+</body>
+</html>

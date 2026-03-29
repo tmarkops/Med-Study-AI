@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Med Notes</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f8fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e8eaf0;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #4f6ef7; }
+    .header-sub { font-size: 0.8rem; color: #888; }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .breadcrumb span { color: #bbb; }
+
+    .breadcrumb a {
+      color: #4f6ef7;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* Filter pills */
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .pill {
+      padding: 0.45rem 1rem;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid #e0e2ea;
+      background: #fff;
+      color: #555;
+      transition: all 0.15s;
+    }
+
+    .pill:hover { border-color: #4f6ef7; color: #4f6ef7; }
+    .pill.active { background: #4f6ef7; color: #fff; border-color: #4f6ef7; }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Folder card */
+    .folder-card {
+      background: #fff;
+      border: 1.5px solid #e8eaf0;
+      border-radius: 14px;
+      padding: 1.2rem 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .folder-card:hover {
+      border-color: #c5cdf8;
+      box-shadow: 0 4px 18px rgba(79, 110, 247, 0.08);
+    }
+
+    .folder-icon {
+      width: 40px;
+      height: 40px;
+      background: #eef0fd;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .folder-label { font-size: 0.92rem; font-weight: 600; }
+    .folder-count { font-size: 0.75rem; color: #999; margin-top: 0.15rem; }
+
+    /* Note card */
+    .note-card {
+      background: #fff;
+      border: 1.5px solid #e8eaf0;
+      border-radius: 14px;
+      padding: 1.2rem 1.3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .note-card:hover {
+      border-color: #c5cdf8;
+      box-shadow: 0 4px 18px rgba(79, 110, 247, 0.08);
+    }
+
+    .note-icon {
+      width: 38px;
+      height: 38px;
+      background: #f0fdf4;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .note-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .note-meta { font-size: 0.76rem; color: #999; }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.9rem;
+      background: #4f6ef7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    .download-btn:hover { background: #3a58e0; }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #aaa;
+    }
+
+    .empty-state p { margin-top: 0.5rem; font-size: 0.9rem; }
+
+    .loading {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem;
+      color: #bbb;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 500px) {
+      h1 { font-size: 1.5rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    MedNotes
+  </div>
+  <span class="header-sub">Study resources</span>
+</header>
+
+<main>
+  <h1>Study Notes</h1>
+  <p class="subtitle">Browse notes by semester, block, and APE.</p>
+
+  <nav class="breadcrumb" id="breadcrumb"></nav>
+
+  <div class="pills" id="pills"></div>
+
+  <div class="grid" id="grid">
+    <div class="loading">Loading notes...</div>
+  </div>
+</main>
+
+<script>
+  let allNotes = [];
+
+  // View state: which level we're drilling into
+  // { semester: null, block: null, ape: null }
+  let view = { semester: null, block: null, ape: null };
+
+  function formatName(str) {
+    return str.replace(/[_-]/g, " ");
+  }
+
+  function timeAgo(ts) {
+    const diff = (Date.now() / 1000) - ts;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+    return Math.floor(diff / 86400) + "d ago";
+  }
+
+  // Return notes matching current view filters
+  function filteredNotes() {
+    return allNotes.filter(n => {
+      if (view.semester && n.semester !== view.semester) return false;
+      if (view.block    && n.block    !== view.block)    return false;
+      if (view.ape      && n.ape_folder !== view.ape)    return false;
+      return true;
+    });
+  }
+
+  // Unique values of a field across filtered notes
+  function unique(field, notes) {
+    return [...new Set(notes.map(n => n[field]).filter(Boolean))].sort();
+  }
+
+  function renderBreadcrumb() {
+    const bc = document.getElementById("breadcrumb");
+    const parts = [];
+
+    parts.push(`<a onclick="drillTo(null,null,null)">All</a>`);
+    if (view.semester) {
+      parts.push(`<span>›</span>`);
+      if (view.block || view.ape) {
+        parts.push(`<a onclick="drillTo('${view.semester}',null,null)">${view.semester}</a>`);
+      } else {
+        parts.push(`<strong>${view.semester}</strong>`);
+      }
+    }
+    if (view.block) {
+      parts.push(`<span>›</span>`);
+      if (view.ape) {
+        parts.push(`<a onclick="drillTo('${view.semester}','${view.block}',null)">${formatName(view.block)}</a>`);
+      } else {
+        parts.push(`<strong>${formatName(view.block)}</strong>`);
+      }
+    }
+    if (view.ape) {
+      parts.push(`<span>›</span>`);
+      parts.push(`<strong>${formatName(view.ape.replace(/^APE_\d+_/, "APE " + view.ape.match(/^APE_(\d+)/)?.[1] + " — "))}</strong>`);
+    }
+
+    bc.innerHTML = parts.join(" ");
+  }
+
+  function renderPills() {
+    const pillsEl = document.getElementById("pills");
+    const notes = filteredNotes();
+    pillsEl.innerHTML = "";
+
+    // At top level show semester pills; within semester show block pills
+    if (!view.semester) {
+      const semesters = unique("semester", allNotes);
+      if (semesters.length <= 1) return; // nothing useful to show
+      semesters.forEach(s => {
+        const btn = document.createElement("button");
+        btn.className = "pill" + (view.semester === s ? " active" : "");
+        btn.textContent = s;
+        btn.onclick = () => drillTo(s, null, null);
+        pillsEl.appendChild(btn);
+      });
+    } else if (!view.block) {
+      const blocks = unique("block", filteredNotes());
+      if (blocks.length <= 1) return;
+      blocks.forEach(b => {
+        const btn = document.createElement("button");
+        btn.className = "pill" + (view.block === b ? " active" : "");
+        btn.textContent = formatName(b);
+        btn.onclick = () => drillTo(view.semester, b, null);
+        pillsEl.appendChild(btn);
+      });
+    }
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById("grid");
+    const notes = filteredNotes();
+
+    if (!view.semester) {
+      // Show semester folders
+      const semesters = unique("semester", allNotes);
+      if (semesters.length === 0) {
+        grid.innerHTML = `<div class="empty-state"><div style="font-size:2rem">📄</div><p>No notes available yet.</p></div>`;
+        return;
+      }
+      grid.innerHTML = semesters.map(s => {
+        const count = allNotes.filter(n => n.semester === s).length;
+        return `<div class="folder-card" onclick="drillTo('${s}',null,null)">
+          <div class="folder-icon">📅</div>
+          <div>
+            <div class="folder-label">${s}</div>
+            <div class="folder-count">${count} file${count !== 1 ? "s" : ""}</div>
+          </div>
+        </div>`;
+      }).join("");
+
+    } else if (!view.block) {
+      // Show block folders within this semester
+      const blocks = unique("block", notes);
+      grid.innerHTML = blocks.map(b => {
+        const count = notes.filter(n => n.block === b).length;
+        return `<div class="folder-card" onclick="drillTo('${view.semester}','${b}',null)">
+          <div class="folder-icon">🫀</div>
+          <div>
+            <div class="folder-label">${formatName(b)}</div>
+            <div class="folder-count">${count} file${count !== 1 ? "s" : ""}</div>
+          </div>
+        </div>`;
+      }).join("");
+
+    } else if (!view.ape) {
+      // Show APE folders within this block
+      const apes = unique("ape_folder", notes);
+      if (apes.length === 0) {
+        renderNoteCards(notes, grid);
+        return;
+      }
+      grid.innerHTML = apes.map(ape => {
+        const count = notes.filter(n => n.ape_folder === ape).length;
+        const num = ape.match(/^APE_(\d+)/)?.[1];
+        const name = ape.replace(/^APE_\d+_/, "").replace(/_/g, " ");
+        return `<div class="folder-card" onclick="drillTo('${view.semester}','${view.block}','${ape}')">
+          <div class="folder-icon">📋</div>
+          <div>
+            <div class="folder-label">APE ${num} — ${name}</div>
+            <div class="folder-count">${count} file${count !== 1 ? "s" : ""}</div>
+          </div>
+        </div>`;
+      }).join("");
+
+    } else {
+      // Show note files
+      renderNoteCards(notes, grid);
+    }
+  }
+
+  function renderNoteCards(notes, grid) {
+    if (notes.length === 0) {
+      grid.innerHTML = `<div class="empty-state"><div style="font-size:2rem">📄</div><p>No notes here yet.</p></div>`;
+      return;
+    }
+    grid.innerHTML = notes.map(n => {
+      const name = n.filename.replace(/\.docx$/i, "").replace(/[_-]/g, " ");
+      return `<div class="note-card">
+        <div class="note-icon">📄</div>
+        <div>
+          <div class="note-name">${name}</div>
+          <div class="note-meta">${n.size_kb} KB · ${timeAgo(n.modified)}</div>
+        </div>
+        <a class="download-btn" href="/download/${encodeURIComponent(n.path)}">↓ Download</a>
+      </div>`;
+    }).join("");
+  }
+
+  function drillTo(semester, block, ape) {
+    view = { semester, block, ape };
+    renderBreadcrumb();
+    renderPills();
+    renderGrid();
+  }
+
+  async function loadNotes() {
+    try {
+      const res = await fetch("/api/notes");
+      const raw = await res.json();
+      // Attach ape_folder derived field for grouping
+      allNotes = raw.map(n => ({
+        ...n,
+        ape_folder: n.ape_number != null
+          ? `APE_${n.ape_number}_${(n.ape_name || "").replace(/ /g, "_")}`
+          : null,
+      }));
+      drillTo(null, null, null);
+    } catch (e) {
+      document.getElementById("grid").innerHTML =
+        `<div class="empty-state"><p>Could not load notes. Try refreshing.</p></div>`;
+    }
+  }
+
+  loadNotes();
+</script>
+
+</body>
+</html>
