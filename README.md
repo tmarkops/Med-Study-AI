@@ -71,7 +71,7 @@ python app/notes.py --objectives-file objectifs.pdf --block GI --language FR --o
 ## TODO
 
 - [ ] Add per-file delete to `ingest.py` (remove chunks by `file_hash` without resetting the whole index)
-- [ ] Fix concise prompt output length: `--style concise` currently produces notes roughly the same length as `--style detailed`. Fix: add an explicit length heuristic (e.g. ~half the length of detailed, max 2 clinical pearls).
+- [x] Fix concise prompt output length: added explicit length targets to all prompts (detailed: 8–15 bullets / 1–2 pages; concise: 5–10 bullets / ~1 page) and added a "don't repeat the same point" rule to combat RAG duplication.
 - [ ] Deploy to Railway with persistent disk volume for the vector index
-- [ ] Fix notes formatting: (a) remove `**asterisks**` around French medical terms — the prompt is incorrectly bolding them; (b) fix ugly spacing in the .docx output; (c) notes are far too long — 11 objectives produced 46 pages. Need a hard length cap per objective in the prompt (e.g. max ~1 page / 400 words per objective).
+- [x] Fix notes formatting: (a) `export.py` now renders `*italic*` for French terms (previously bare asterisks); (b) sub-bullets (`  - item`) now correctly use `List Bullet 2` style for proper indentation instead of rendering flat; (c) added hard length caps per objective in all prompts.
 - [x] Fix stale index bug: `load_index()` now constructs fresh `SimpleDocumentStore`, `SimpleIndexStore`, and `SimpleVectorStore` instances from disk on every call, bypassing LlamaIndex's in-process singleton cache.

@@ -41,6 +41,37 @@ def _load_prompt(language: str, style: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def build_prompt(
+    objective: str,
+    block: str = None,
+    source_type: str = None,
+    language: str = "EN",
+    style: str = "detailed",
+    top_k: int = 0,
+    rerank: bool = True,
+) -> str:
+    """
+    Retrieve relevant chunks and assemble the final prompt without calling the LLM.
+    Returns the prompt string ready to paste into any LLM webapp.
+    """
+    resolved_top_k = top_k if top_k > 0 else adaptive_top_k(objective)
+    lang_filter = language if language in ("EN", "FR") else None
+    results = retrieve(_retrieval_query(objective), top_k=resolved_top_k, block=block, source_type=source_type, language=lang_filter, rerank=rerank)
+
+    if not results:
+        return f"(No relevant source material found for: {objective})"
+
+    context_parts = []
+    for i, node in enumerate(results, 1):
+        title = node.node.metadata.get("title", "Unknown source")
+        text = node.node.text.strip()
+        context_parts.append(f"[Source {i} — {title}]\n{text}")
+
+    context = "\n\n---\n\n".join(context_parts)
+    prompt_template = _load_prompt(language, style)
+    return prompt_template.format(objective=objective, context=context)
+
+
 def generate_notes(
     objective: str,
     block: str = None,
@@ -49,6 +80,7 @@ def generate_notes(
     style: str = "detailed",
     top_k: int = 0,
     rerank: bool = True,
+    dry_run: bool = False,
 ) -> str:
     """
     Retrieve relevant chunks and generate study notes for a single learning objective.
@@ -62,6 +94,7 @@ def generate_notes(
         top_k: Number of source chunks to retrieve. Pass 0 (default) to infer
                automatically from the objective's complexity.
         rerank: If True (default), oversample and rerank with a cross-encoder.
+        dry_run: If True, print the final prompt and skip the LLM call.
 
     Returns:
         Generated notes as a string.
@@ -91,6 +124,14 @@ def generate_notes(
     prompt_template = _load_prompt(language, style)
     prompt = prompt_template.format(objective=objective, context=context)
 
+    if dry_run:
+        print("\n" + "=" * 60)
+        print("DRY RUN — prompt below (paste into your LLM webapp):")
+        print("=" * 60 + "\n")
+        print(prompt)
+        print("\n" + "=" * 60 + "\n")
+        return f"## {objective}\n\n> [dry-run — no notes generated]\n"
+
     print(f"  Generating notes...")
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     message = client.messages.create(
@@ -110,6 +151,7 @@ def generate_notes_from_objectives(
     style: str = "detailed",
     top_k: int = 0,
     rerank: bool = True,
+    dry_run: bool = False,
 ) -> str:
     """
     Generate notes for a list of objectives and return them as a single combined string.
@@ -126,6 +168,7 @@ def generate_notes_from_objectives(
             style=style,
             top_k=top_k,
             rerank=rerank,
+            dry_run=dry_run,
         )
         sections.append(notes)
 
@@ -156,6 +199,8 @@ if __name__ == "__main__":
                         help="Number of source chunks to retrieve (0 = infer from objective complexity)")
     parser.add_argument("--no-rerank", action="store_true",
                         help="Disable cross-encoder reranking (faster but lower retrieval quality)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Print the prompt instead of calling the LLM (no API cost)")
     parser.add_argument("--output", default=None, help="Optional path to save the notes (e.g. notes.md)")
     args = parser.parse_args()
 
@@ -174,6 +219,7 @@ if __name__ == "__main__":
         style=args.style,
         top_k=args.top_k,
         rerank=not args.no_rerank,
+        dry_run=args.dry_run,
     )
 
     if args.output:

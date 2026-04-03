@@ -185,6 +185,49 @@
       .row, .row-3 { grid-template-columns: 1fr; }
     }
 
+    .btn-secondary { background: #f0f2ff; color: #4f6ef7; border: 1.5px solid #c7cefb; }
+    .btn-secondary:hover { background: #e0e5ff; }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .prompt-output {
+      margin-top: 1rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .prompt-output.visible { display: flex; }
+
+    .prompt-textarea {
+      width: 100%;
+      min-height: 260px;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid #e0e2ea;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-family: "SF Mono", "Fira Code", monospace;
+      resize: vertical;
+      background: #fafafa;
+      color: #1a1a2e;
+      outline: none;
+      line-height: 1.55;
+    }
+
+    .copy-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .copy-confirm {
+      font-size: 0.82rem;
+      color: #16a34a;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .copy-confirm.visible { opacity: 1; }
+
     /* Login overlay */
     #loginOverlay {
       position: fixed;
@@ -314,6 +357,71 @@
       </div>
       <button class="btn btn-primary" type="submit" id="ingestBtn">Upload &amp; Ingest</button>
       <div class="status-box" id="ingestStatus"></div>
+    </form>
+  </div>
+
+  <!-- Prompt Preview (dry-run) -->
+  <div class="card">
+    <h2>🔍 Prompt Preview</h2>
+    <p style="font-size:0.83rem;color:#666;margin-bottom:1.1rem;">Retrieve chunks and build the prompt for a single objective — without calling the LLM.</p>
+    <form id="dryRunForm">
+      <div class="form-group">
+        <label>Objective</label>
+        <input type="text" id="dryObjective" placeholder="e.g. Describe the pathophysiology of H. pylori" />
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Language</label>
+          <select id="dryLanguage">
+            <option value="FR">FR</option>
+            <option value="EN">EN</option>
+            <option value="MIXED">MIXED</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Style</label>
+          <select id="dryStyle">
+            <option value="detailed">detailed</option>
+            <option value="concise">concise</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Block (optional)</label>
+          <select id="dryBlock">
+            <option value="">— none —</option>
+            <option value="GI">GI</option>
+            <option value="cardio">cardio</option>
+            <option value="respiratory">respiratory</option>
+            <option value="neuro">neuro</option>
+            <option value="renal">renal</option>
+            <option value="hematology">hematology</option>
+            <option value="pharmacology">pharmacology</option>
+            <option value="anatomy">anatomy</option>
+            <option value="general">general</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Source type (optional)</label>
+          <select id="drySourceType">
+            <option value="">— none —</option>
+            <option value="textbook">textbook</option>
+            <option value="lecture">lecture</option>
+            <option value="notes">notes</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" type="submit" id="dryRunBtn">Build Prompt</button>
+      <div class="status-box" id="dryRunStatus"></div>
+
+      <div class="prompt-output" id="promptOutput">
+        <textarea class="prompt-textarea" id="promptText" readonly></textarea>
+        <div class="copy-row">
+          <button type="button" class="btn btn-secondary" onclick="copyPrompt()">Copy to clipboard</button>
+          <span class="copy-confirm" id="copyConfirm">✓ Copied!</span>
+        </div>
+      </div>
     </form>
   </div>
 
@@ -493,6 +601,50 @@
       btn.disabled = false;
     }
   });
+
+  // --- Dry-run form ---
+  document.getElementById("dryRunForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const objective = document.getElementById("dryObjective").value.trim();
+    if (!objective) return setStatus("dryRunStatus", "error", "Please enter an objective.");
+
+    const btn = document.getElementById("dryRunBtn");
+    btn.disabled = true;
+    document.getElementById("promptOutput").classList.remove("visible");
+    setStatus("dryRunStatus", "info", '<span class="spinner"></span> Retrieving chunks and building prompt...');
+
+    const fd = new FormData();
+    fd.append("objective", objective);
+    fd.append("language", document.getElementById("dryLanguage").value);
+    fd.append("style", document.getElementById("dryStyle").value);
+    fd.append("block", document.getElementById("dryBlock").value);
+    fd.append("source_type", document.getElementById("drySourceType").value);
+
+    try {
+      const res = await authedFetch("/api/dry-run", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById("dryRunStatus").className = "status-box";
+        document.getElementById("promptText").value = data.prompt;
+        document.getElementById("promptOutput").classList.add("visible");
+      } else {
+        setStatus("dryRunStatus", "error", "Error: " + (data.detail || "Unknown error"));
+      }
+    } catch (err) {
+      setStatus("dryRunStatus", "error", "Network error: " + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function copyPrompt() {
+    const text = document.getElementById("promptText").value;
+    navigator.clipboard.writeText(text).then(() => {
+      const confirm = document.getElementById("copyConfirm");
+      confirm.classList.add("visible");
+      setTimeout(() => confirm.classList.remove("visible"), 2000);
+    });
+  }
 
   // --- Generate form ---
   let pollInterval = null;

@@ -25,6 +25,7 @@ Réponds directement à l'objectif en utilisant uniquement ce que couvre le mat�
 **Règles :**
 - Rédige entièrement en **français**
 - Puces et sous-puces uniquement — pas de paragraphes en prose (une phrase d'introduction est autorisée si le concept nécessite une orientation)
+- **Vise 5–10 puces par objectif (environ 1 page).** Si le matériel répète la même information, écris-la une seule fois.
 - Utilise des sous-puces pour le contenu imbriqué (sous-types, exemples, étapes) — ne laisse jamais un contenu hiérarchique à plat
 - Couvre ce que l'objectif demande : définitions, mécanismes, présentation clinique, diagnostic, traitement, faits importants pour les examens — uniquement ce qui est pertinent
 - **Mets en gras** les termes critiques et les faits importants pour les examens à leur première apparition

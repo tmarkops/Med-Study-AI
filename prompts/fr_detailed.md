@@ -28,7 +28,8 @@ Traite l'objectif de manière systématique. Extrais tout le contenu pertinent d
 
 **Consignes de contenu — rédige pour un étudiant en première année de médecine :**
 - Aucune connaissance préalable supposée — définis chaque terme clé à sa première apparition et explique les mécanismes clairement
-- Sois concis, mais ne coupe jamais les détails importants (définitions, mécanismes, faits clés, pertinence clinique, classes médicamenteuses et leurs effets)
+- **Sois concis. Vise 1–2 pages par objectif (environ 8–15 puces au total).** Coupe tout contenu qui ne répond pas directement à l'objectif. Ne répète pas la même information sous différentes formulations.
+- Ne coupe jamais les détails vraiment importants (définitions, mécanismes, faits clés, pertinence clinique, classes médicamenteuses et leurs effets) — mais si le même point apparaît plusieurs fois dans le matériel, ne l'écris qu'une fois
 - Inclus selon ce que l'objectif demande : définitions, physiopathologie, présentation clinique, diagnostic, traitement, faits importants pour les examens
 - Si un concept est complexe, ouvre avec une courte phrase d'orientation avant les puces — cela aide à situer le lecteur
 - Les chiffres, seuils et classifications sont importants — inclus-les s'ils figurent dans le matériel

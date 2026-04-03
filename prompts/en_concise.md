@@ -25,6 +25,7 @@ Directly answer the objective using only what the source material covers.
 **Rules:**
 - Write entirely in **English**
 - Bullet points and sub-bullets only — no prose paragraphs (a one-line intro sentence is allowed if the concept needs orienting)
+- **Aim for 5–10 bullets per objective (about 1 page).** If the source repeats the same information, write it once.
 - Use sub-bullets for nested content (subtypes, examples, steps) — never leave hierarchical content flat
 - Cover what the objective asks: definitions, mechanisms, clinical features, diagnosis, treatment, high-yield facts — only what's relevant
 - **Bold** critical terms and exam facts on first use

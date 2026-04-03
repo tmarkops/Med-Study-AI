@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).parent / "app"))
 
 from ingest import ingest
 from objectives import parse_objectives
-from notes import generate_notes_from_objectives
+from notes import generate_notes_from_objectives, build_prompt
 from export import save_as_docx
 
 app = FastAPI()
@@ -237,6 +237,25 @@ def generate(
     t.start()
 
     return {"job_id": job_id}
+
+
+@app.post("/api/dry-run")
+def dry_run_prompt(
+    objective: str = Form(...),
+    block: Optional[str] = Form(""),
+    source_type: Optional[str] = Form(""),
+    language: str = Form("EN"),
+    style: str = Form("detailed"),
+    _user: str = Depends(require_admin),
+):
+    prompt = build_prompt(
+        objective=objective,
+        block=block or None,
+        source_type=source_type or None,
+        language=language,
+        style=style,
+    )
+    return {"prompt": prompt}
 
 
 @app.get("/api/jobs/{job_id}")

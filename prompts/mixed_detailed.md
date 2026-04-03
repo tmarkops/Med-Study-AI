@@ -43,7 +43,8 @@ Go through the objective systematically. Pull all relevant content from the sour
 
 **Content guidelines — write for a first-year medical student:**
 - No assumed background knowledge — define every key term on first use and explain mechanisms clearly
-- Be concise, but never cut important details (definitions, mechanisms, key facts, clinical relevance, drug classes and their effects)
+- **Be concise. Aim for 1–2 pages per objective (roughly 8–15 bullets total).** Cut any content that doesn't directly answer the objective. Do not pad with tangential details.
+- Never cut truly important details (definitions, mechanisms, key facts, clinical relevance, drug classes and their effects) — but if the same point is made multiple times in the source, write it once
 - Include: definitions, pathophysiology, clinical features, diagnosis, treatment, and high-yield exam facts as relevant to the objective
 - If a concept is complex, open with a short introductory sentence before the bullets — this helps orient the reader
 - Numbers, thresholds, and classifications matter — include them when present in the source
